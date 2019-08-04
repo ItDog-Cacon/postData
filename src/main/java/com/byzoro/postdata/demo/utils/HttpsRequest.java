@@ -289,21 +289,22 @@ public class HttpsRequest {
         }
     }
 
-    public static String sslRequestPostString(String data,String charset,Config config) throws Exception {
+    public static String sslRequestPostString(String data,String charset,String password,String url,String certificate) throws Exception {
         //        System.setProperty("javax.net.ssl.keyStore","D:\\docker\\src\\main\\resources\\success\\server.key.p12");
-        System.setProperty("javax.net.ssl.keyStorePassword",config.getPassword());
+//        System.setProperty("javax.net.ssl.keyStorePassword",password);
 //        System.setProperty("https.protocols", "TLSv1");
-        System.setProperty("javax.net.debug","ssl");
+        // TODO: 8/4/2019 打印https握手密文信息
+//        System.setProperty("javax.net.debug","ssl");
         KeyStore keyStore = KeyStore.getInstance("pkcs12");
-        InputStream instream = new FileInputStream(new File(config.getCertificate()));
+        InputStream instream = new FileInputStream(new File(certificate));
         try {
             // 这里就指的是KeyStore库的密码
-            keyStore.load(instream, PFX_PWD.toCharArray());
+            keyStore.load(instream, password.toCharArray());
         } finally {
             instream.close();
         }
 
-        SSLContext sslcontext = SSLContexts.custom().loadKeyMaterial(keyStore, PFX_PWD.toCharArray()).build();
+        SSLContext sslcontext = SSLContexts.custom().loadKeyMaterial(keyStore, password.toCharArray()).build();
         SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(sslcontext
                 , new String[] { "TLSv1" }  // supportedProtocols ,这里可以按需要设置
                 , null  // supportedCipherSuites
@@ -312,7 +313,7 @@ public class HttpsRequest {
         CloseableHttpClient httpclient = HttpClients.custom().setSSLSocketFactory(sslsf).build();
         HttpPost httpPost = null;
         try {
-            httpPost = new HttpPost(config.getUrl());
+            httpPost = new HttpPost(url);
             StringEntity requestEntity = new StringEntity(data, "UTF-8");
             httpPost.setEntity(requestEntity);
             CloseableHttpResponse response = httpclient.execute(httpPost);
